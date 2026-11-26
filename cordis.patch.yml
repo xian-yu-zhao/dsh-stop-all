@@ -1,0 +1,19 @@
+# dsh-stop-all — Host plugin registration for DeepSeek Harness.
+# One Host plugin row; per-row config lives in the patch layer and survives upgrades.
+#
+# Optional settings (defaults shown; drop any line you do not want to change):
+#
+#   - insert:
+#       - id: stop-all
+#         name: 'dsh-stop-all'
+#         config:
+#           includeJobs: true        # also kill running/stopping jobs owned by tree members
+#           catalogPass: true        # second pass: enumerate the durable subagent catalog
+#           autoReissue: true        # re-issue while the same turn is still running (max 2)
+#           settleTimeoutMs: 8000    # how long the button keeps watching for quiescence
+#           killReason: 'stop-all'   # reason merged into a killed job's terminal detail
+#           requireTeamMode: true    # only show the button in team-enabled conversations
+- insert:
+    - id: stop-all
+      name: 'dsh-stop-all'
+      config: {}

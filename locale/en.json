@@ -1,0 +1,12 @@
+{
+  "button.aria": "Stop all",
+  "button.tooltip": "Stop all: main conversation + {subagents} subagent(s) + {jobs} background job(s)",
+  "button.tooltip.subagentPage": "This stops the whole conversation tree.",
+  "button.tooltip.queue": "After stopping, {count} queued message(s) resume as the native stop does.",
+  "button.tooltip.irreversible": "Interruption is irreversible: tool side effects already performed are not undone.",
+  "button.stopping": "Stopping…",
+  "button.partial": "Not fully stopped",
+  "button.partialTooltip": "Not fully stopped: {items}",
+  "button.retry": "Retry",
+  "shortcut.label": "Stop all"
+}

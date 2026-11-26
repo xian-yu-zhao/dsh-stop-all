@@ -1,0 +1,70 @@
+{
+  "name": "dsh-stop-all",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Stop-all for DeepSeek Harness: one button that stops the whole conversation tree — the main turn, every running subagent at any depth, and the background jobs tree members own — with exactly the native stop semantics (queued input kept, scheduled tasks untouched, resident subagents not disposed).",
+  "author": "xian-yu-zhao",
+  "license": "MIT",
+  "homepage": "https://github.com/xian-yu-zhao/dsh-stop-all#readme",
+  "bugs": {
+    "url": "https://github.com/xian-yu-zhao/dsh-stop-all/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xian-yu-zhao/dsh-stop-all.git"
+  },
+  "keywords": [
+    "deepseek-harness",
+    "dsh",
+    "cordis",
+    "subagent",
+    "agent-teams",
+    "stop",
+    "interrupt"
+  ],
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/",
+    "client.js",
+    "locale/",
+    "icon.svg",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+    "cordis.patch.yml",
+    "package.json"
+  ],
+  "scripts": {
+    "check": "node --check lib/index.js && node --check lib/logic.js && node --check client.js",
+    "test": "node test/smoke.mjs && node test/integration.mjs",
+    "verify": "npm run check && npm test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-api-session-controller",
+        "@deepseek-ai/dsh-api-remotes",
+        "@deepseek-ai/dsh-client-locale",
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ],
+      "external": [
+        "react",
+        "zod",
+        "@deepseek-ai/dsh-client-ui-primitives"
+      ]
+    }
+  }
+}

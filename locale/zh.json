@@ -1,0 +1,12 @@
+{
+  "button.aria": "停止全部",
+  "button.tooltip": "停止全部：主对话 + {subagents} 个子代理 + {jobs} 个后台任务",
+  "button.tooltip.subagentPage": "将停止整个对话树。",
+  "button.tooltip.queue": "停止后，排队的 {count} 条输入会按原生规则继续。",
+  "button.tooltip.irreversible": "中断不可逆：已执行的工具副作用不会撤销。",
+  "button.stopping": "停止中…",
+  "button.partial": "未完全停止",
+  "button.partialTooltip": "未完全停止：{items}",
+  "button.retry": "重试",
+  "shortcut.label": "停止全部"
+}
