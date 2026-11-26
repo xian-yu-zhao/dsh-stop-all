@@ -1,6 +1,6 @@
 {
   "name": "dsh-stop-all",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Stop-all for DeepSeek Harness: one button that stops the whole conversation tree — the main turn, every running subagent at any depth, and the background jobs tree members own — with exactly the native stop semantics (queued input kept, scheduled tasks untouched, resident subagents not disposed).",
   "author": "xian-yu-zhao",

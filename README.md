@@ -4,7 +4,7 @@ One click stops the whole conversation tree in DeepSeek Harness — the main tur
 
 *中文定位：把「原生停止」从主对话扩展到整棵对话树；只停工作，不动排队输入与定时任务。*
 
-Package `dsh-stop-all` · v0.1.0 · MIT · author xian-yu-zhao · built for DSH 44.7.0 (internal packages 0.2.2-rc.5)
+Package `dsh-stop-all` · v0.1.1 · MIT · author xian-yu-zhao · built for DSH 44.7.0 (internal packages 0.2.2-rc.5)
 
 ## Why
 
@@ -47,8 +47,9 @@ In `~/.dsh/profiles/desktop/package.json`:
 - `subagents`, `jobs`, and `agentTeams` are optional Host services, read with `ctx.get()`; when one is missing the matching capability degrades instead of failing.
 - The Host half imports no `@deepseek-ai/*` package (the profile does not expose them to plugin runtime imports). The browser half uses only seed modules: `react`, `zod`, and `@deepseek-ai/dsh-client-ui-primitives`.
 - Only `engines.node` is declared. Do not add `engines.dsh`: DSH's version gate compares it with its package version (`0.2.2-rc.5`), so a range such as `>=44.7.0` makes the profile refuse to load.
+- **Targets DSH 44.7.0.** The Remote contract is hand-written, so a dsh upgrade can silently change it and leave the button inert. At startup the Host half compares its own `typertRemote` binding and prototype method marker with a builtin Remote service (`agentTeams`) and, when the shapes differ, logs `stop-all: 当前 dsh 版本的远程服务契约与插件预期不一致，按钮可能无法工作`. If that warning shows up after upgrading dsh, re-check the contract (Remote method marker key, marker `version`/`methods` shape, and the `typertRemote` fields) before relying on the button.
 
-**中文说明：** 宿主半只强依赖 `agents`，`subagents`/`jobs`/`agentTeams` 缺失时按能力降级；不要写 `engines.dsh`。
+**中文说明：** 宿主半只强依赖 `agents`，`subagents`/`jobs`/`agentTeams` 缺失时按能力降级；不要写 `engines.dsh`。插件按 DSH 44.7.0 的内部契约适配；升级 dsh 后若启动日志出现上述契约不一致警告，需要重新核对远程方法标记与 `typertRemote` 结构。
 
 ## Advantages
 
@@ -140,9 +141,10 @@ Set in the patch row's `config`; applied when the plugin reloads (no DSH restart
 
 ## Changelog
 
+- **0.1.1** — Patch: `retryOf` now really re-issues still-running background jobs (a job id never enters the turn table); jobs that settled or vanished are skipped silently instead of being reported as failures; startup contract self-check warns when a dsh upgrade changes the Remote service contract. Details in [`CHANGELOG.md`](CHANGELOG.md).
 - **0.1.0** — First release: tree-wide stop button, `stopAll` remote API, coverage verification, configurable team-mode gate. Details in [`CHANGELOG.md`](CHANGELOG.md).
 
-**中文说明：** 只列版本与一行摘要。
+**中文说明：** 0.1.1 为补丁：修好 retryOf 对后台任务不补杀的问题、把已结束/已消失的任务改为静默跳过、并新增启动时的远程契约自检告警。
 
 ## License
 

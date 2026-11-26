@@ -12,7 +12,7 @@
  * Run with `node test/integration.mjs` (part of `npm run verify`).
  */
 import assert from 'node:assert/strict'
-import { apply } from '../lib/index.js'
+import { apply, sameRemoteShape, verifyRemoteContract } from '../lib/index.js'
 
 const ROOT = 'session-root'
 const CHILD_A = 'session-child-a'
@@ -50,6 +50,8 @@ const jobsByOwner = new Map([
   [STRANGER, [{ id: 'job-stranger', owner: STRANGER, status: 'running', label: 'stranger job' }]],
 ])
 const unownedJobs = [{ id: 'job-unowned', owner: undefined, status: 'running', label: 'unowned' }]
+// Jobs whose registry record disappears exactly when `kill` is attempted.
+const missingOnKill = new Set()
 
 const listeners = new Map()
 const services = new Map()
@@ -91,6 +93,12 @@ services.set('jobs', {
   },
   kill(id, owner, reason) {
     calls.push({ kind: 'kill', id, owner, reason })
+    if (missingOnKill.has(id)) {
+      // Mirrors the local registry: an unknown job throws with JOB_NOT_FOUND.
+      const error = new Error(`unknown job ${id}`)
+      error.code = 'JOB_NOT_FOUND'
+      throw error
+    }
     for (const rows of jobsByOwner.values()) {
       for (const row of rows) if (row.id === id) row.status = 'killed'
     }
@@ -244,6 +252,88 @@ retried.length = 0
 const newWork = await svc.stop({ sessionId: 'session-retry', requestId: 'req-retry-0003', retryOf: 'req-retry-0001' })
 assert.deepEqual(newWork.requested, [], 'a new turn after the stop is not re-issued')
 assert.equal(retried.length, 0)
+
+/* ---- retryOf re-issues a job that is still running (0.1.1) ----------- */
+// A job id never enters the turn table, so the "same turn" check must not
+// filter job rows: before 0.1.1 every job row was skipped here.
+jobsByOwner.set(ROOT, [
+  ...(jobsByOwner.get(ROOT) ?? []),
+  { id: 'job-late', owner: ROOT, status: 'running', label: 'late job' },
+])
+const jobPlan = row => ({
+  sessionId: ROOT,
+  result: { ok: true },
+  plan: [row],
+})
+svc.cache.put('req-job-first', jobPlan({ id: 'job-late', kind: 'job', label: 'late job', owner: ROOT, turn: undefined }))
+const killsBeforeJobRetry = calls.filter(call => call.kind === 'kill').length
+const jobReissue = await svc.stop({ sessionId: ROOT, requestId: 'req-job-retry', retryOf: 'req-job-first' })
+const jobRetryKills = calls.filter(call => call.kind === 'kill').slice(killsBeforeJobRetry)
+assert.deepEqual(jobRetryKills.map(call => call.id), ['job-late'], 'a still-running job is re-issued exactly once')
+assert.ok(jobRetryKills.every(call => call.reason === 'stop-all'))
+assert.deepEqual(
+  jobReissue.requested.filter(row => row.kind === 'job').map(row => row.id),
+  ['job-late'],
+  'the re-issued job is reported as requested',
+)
+assert.deepEqual(jobReissue.failed, [], 'a re-issued job is not reported as failed')
+
+/* ---- retryOf leaves a settled job alone (0.1.1) --------------------- */
+// `job-late` is terminal now: neither requested nor failed, and no kill.
+svc.cache.put('req-job-settled', jobPlan({ id: 'job-late', kind: 'job', label: 'late job', owner: ROOT, turn: undefined }))
+const killsBeforeSettled = calls.filter(call => call.kind === 'kill').length
+const settledReissue = await svc.stop({ sessionId: ROOT, requestId: 'req-job-settled-run', retryOf: 'req-job-settled' })
+assert.deepEqual(settledReissue.requested.filter(row => row.kind === 'job'), [], 'a settled job is not requested')
+assert.equal(calls.filter(call => call.kind === 'kill').length, killsBeforeSettled, 'a settled job is not killed again')
+assert.deepEqual(settledReissue.failed, [], 'a settled job is not reported as failed')
+
+/* ---- a job that vanishes at kill time is neither failed nor requested */
+jobsByOwner.set(CHILD_A, [
+  ...(jobsByOwner.get(CHILD_A) ?? []),
+  { id: 'job-ghost', owner: CHILD_A, status: 'running', label: 'ghost job' },
+])
+missingOnKill.add('job-ghost')
+svc.cache.put('req-job-ghost', jobPlan({ id: 'job-ghost', kind: 'job', label: 'ghost job', owner: CHILD_A, turn: undefined }))
+const ghostReissue = await svc.stop({ sessionId: ROOT, requestId: 'req-job-ghost-run', retryOf: 'req-job-ghost' })
+assert.deepEqual(ghostReissue.requested.filter(row => row.kind === 'job'), [], 'a vanished job is not requested')
+assert.deepEqual(ghostReissue.failed, [], 'a vanished job is not reported as failed')
+missingOnKill.delete('job-ghost')
+
+/* ---- startup contract self-check (0.1.1) --------------------------- */
+const MARKER_KEY = '@deepseek-ai/dsh-typert-protocol/remote-methods'
+function makeRemote(marker, remote = {}) {
+  class Fake {}
+  Object.defineProperty(Fake.prototype, MARKER_KEY, { value: marker })
+  const instance = new Fake()
+  instance.typertRemote = { service: instance, serviceKey: 'fake', namespace: 'fake', ...remote }
+  return instance
+}
+const markerV1 = { version: 1, methods: [{ method: 'm', invocation: { kind: 'direct' } }] }
+assert.equal(
+  sameRemoteShape(makeRemote(markerV1), makeRemote(markerV1)),
+  true,
+  'identical hand-written Remote shapes compare equal',
+)
+assert.equal(
+  sameRemoteShape(makeRemote(markerV1), makeRemote({ ...markerV1, version: 2 })),
+  false,
+  'a different marker version is a mismatch',
+)
+const warningSink = []
+const contextWith = builtin => ({
+  get: key => (key === 'agentTeams' ? builtin : undefined),
+  logger: { warn: (...args) => warningSink.push(args.map(String).join(' ')) },
+})
+verifyRemoteContract(contextWith(undefined), svc)
+assert.deepEqual(warningSink, [], 'a missing builtin service skips the comparison silently')
+warningSink.length = 0
+verifyRemoteContract(contextWith({ isEnabled: () => true }), svc)
+assert.deepEqual(warningSink, [], 'a builtin that is not a Remote service is skipped silently')
+warningSink.length = 0
+verifyRemoteContract(contextWith(makeRemote({ ...markerV1, version: 2 })), svc)
+assert.equal(warningSink.length, 1, 'a contract mismatch logs exactly one warning')
+assert.ok(warningSink[0].includes('stop-all:'), 'the warning carries the plugin prefix')
+assert.ok(warningSink[0].includes('按钮可能无法工作'), 'the warning explains the consequence')
 
 /* ---- disposal cleanup ---------------------------------------------- */
 const sizeBefore = svc.turns.size

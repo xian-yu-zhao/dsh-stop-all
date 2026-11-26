@@ -3,6 +3,56 @@
 All notable changes to `dsh-stop-all` are documented here. This project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] — 2026-11-26
+
+Patch release: 0.1.0 is confirmed working in a real dsh 44.7.0 desktop session,
+so this release only fixes the three issues below — no refactor, and the button
+style, slot, shortcut and team-mode visibility rules are untouched.
+
+**中文摘要：** 0.1.0 已在真实 dsh 44.7.0 上验证可用；0.1.1 为补丁版，只修三件事——
+① `retryOf` 现在会真正补杀仍在运行的后台任务（任务 id 不在对话轮次表里，原先被“同一轮”检查全部跳过）；
+② 已结束/已消失/换了归属的任务改为静默跳过，不再记进 `failed`；
+③ 新增宿主启动自检，dsh 升级导致远程服务契约失配时打警告（只报警，不改变行为）。
+按钮样式、槽位、快捷键与团队模式隐藏逻辑均未改动。
+
+### Fixed
+
+- `retryOf` never re-issued background jobs: the "same open turn" check ran
+  before the `row.kind === 'job'` branch, and a job id never appears in the
+  conversation turn table (`turnOf` returns `undefined`), so every job row was
+  skipped. A job that survived the first stop stayed alive, the button kept
+  reporting `partial` ("未完全停止"), and only a second manual click could kill
+  it. Job rows now use their own test — the job must still exist, still belong
+  to the plan's owner, and still be `running` or `stopping` — before one kill is
+  re-issued. Turn rows and subagent rows keep the turn check unchanged.
+- A job that settles or vanishes between listing and killing is no longer
+  reported in `failed`: `jobs.kill` failures carrying `JOB_NOT_FOUND` /
+  `JOB_FOREIGN_SESSION` (or the equivalent message) are treated as "the earlier
+  intent already took effect" — neither requested nor failed, and no error row.
+
+### Added
+
+- Startup contract self-check. The Host half hand-writes the Remote contract
+  (the `typertRemote` binding and the prototype method marker) instead of
+  importing the protocol package, so a dsh upgrade could change it and leave the
+  button silently inert. On startup the plugin compares its own shape with a
+  builtin Remote service (`ctx.get('agentTeams')`, whose `setEnabled` is
+  `@Remote`): prototype marker present with a matching `version`, every method
+  row a named `direct` invocation, and a `typertRemote` binding carrying
+  `service`/`serviceKey`/`namespace`. On a mismatch it logs one warning
+  (`stop-all: 当前 dsh 版本的远程服务契约与插件预期不一致，按钮可能无法工作 …`)
+  and changes nothing; a missing builtin, or one that is not a Remote service,
+  skips the comparison. Verified against the live 44.7.0 host (`TeamService`,
+  marker `{version: 1, methods: [{method: 'setEnabled', invocation: {kind:
+  'direct'}}]}`), which passes with no warning.
+
+### Tests
+
+- Integration regressions: a still-running job is re-issued exactly once by
+  `stop({ retryOf })`; a settled job produces no request, no kill and no
+  failure; a job that vanishes at kill time (`JOB_NOT_FOUND`) is neither
+  requested nor failed.
+
 ## [0.1.0] — 2026-11-26
 
 First release.
