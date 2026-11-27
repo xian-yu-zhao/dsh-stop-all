@@ -13,18 +13,22 @@ which serves <https://awesome-dsh-plugin.com/> and storefronts such as dsh-marke
 | Real code, not a placeholder | ✅ `lib/`, `client.js`, tests |
 | GitHub topic `dsh-plugin` | ✅ (plus `dsh`, `deepseek-harness`, `cordis`, `subagent`, `stop`) |
 | Published on npm | ✅ `dsh-stop-all@0.1.1`, `dist-tags.latest = 0.1.1` |
-| Registry entry file | ✅ prepared in the fork branch `add-dsh-stop-all` |
-| Pull request to the registry | ⏳ blocked by the repo-age gate (see below) |
+| Registry entry file | ✅ `data/plugins/xian-yu-zhao__dsh-stop-all.yml` on the fork branch `add-dsh-stop-all` |
+| Storefront icon | ✅ `assets/icon-180.png` (180×180 PNG rasterized from `icon.svg`) |
+| Pull request to the registry | ✅ opened: [#19212](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/19212) |
+| Verdict | ⏳ repo-age gate: the check re-runs by itself once the repository is 1 day old (see below) |
 
 ## The one blocking rule: repository age
 
 The registry's CI gate rejects submissions whose target repository is younger
-than **1 day** (`contributing.md`, "The repo is at least 1 day old"). This
-repository was created on 2026-11-26, so a PR opened today fails that check.
+than **1 day** (`contributing.md`, "The repo is at least 1 day old"; `scripts/check-submission.mjs`, `MIN_AGE_DAYS = 1`). This
+repository was created on 2026-11-26, so the first gate run reports it as under a
+day old.
 
-The gate verdict is a snapshot and is re-run automatically: a submission blocked
-at "0.5 days old" passes on its own once the repository ages, without pushing an
-empty commit. So the PR only needs to be *opened* after the gate can pass.
+That failure is by design the only one time clears on its own: `regate.yml`
+re-runs the gate on exactly this wording every six hours, so the verdict flips
+without pushing, resubmitting, or reopening anything. Leave the pull request
+alone.
 
 ## The entry
 
@@ -38,6 +42,7 @@ category: session
 description:
   en: 'Stops the whole conversation tree in one click: the main turn, every running subagent at any depth, and the background jobs those sessions own, while queued input and scheduled tasks stay untouched.'
   zh: '一键停止整棵会话树：主对话回合、任意层级的运行中子代理，以及这些会话拥有的后台任务，同时不动排队输入与定时任务。'
+icon: https://raw.githubusercontent.com/xian-yu-zhao/dsh-stop-all/main/assets/icon-180.png
 ```
 
 Notes on the fields:
