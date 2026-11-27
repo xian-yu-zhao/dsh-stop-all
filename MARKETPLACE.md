@@ -45,10 +45,9 @@ Notes on the fields:
 - `category: session` — the plugin controls a conversation (stops its turn, its
   subagents and their jobs); it does not add tools, UI chrome or automation.
 - The `description` contains `: `, so it must stay quoted in YAML.
-- No `icon:` — the registry only accepts a GitHub-hosted **raster** image, and
-  this repository ships a vector `icon.svg`. Without it the storefront falls
-  back to the owner avatar. Add `assets/icon-180.png` plus an `icon:` line to
-  get a custom tile.
+- `icon:` points at `assets/icon-180.png`, a 180×180 PNG rasterized from
+  `icon.svg` — the registry only accepts a GitHub-hosted **raster** image, not a
+  vector, so the storefront tile keeps the button's look.
 - No `tarball:` — the plugin installs from npm, which the registry maps
   automatically (`npm:` in an entry is rejected).
 
