@@ -16,7 +16,7 @@ which serves <https://awesome-dsh-plugin.com/> and storefronts such as dsh-marke
 | Registry entry file | ✅ `data/plugins/xian-yu-zhao__dsh-stop-all.yml` on the fork branch `add-dsh-stop-all` |
 | Storefront icon | ✅ `assets/icon-180.png` (180×180 PNG rasterized from `icon.svg`) |
 | Pull request to the registry | ✅ opened: [#19212](https://github.com/awesome-dsh-plugin/awesome-dsh-plugin/pull/19212) |
-| Verdict | ⏳ repo-age gate: the check re-runs by itself once the repository is 1 day old (see below) |
+| Verdict (first run) | ⚠️ `Submission gate` failed on **repo age only**; `PR check` (17 mechanical checks + site build) passed. Gate text: "repository is 0.6 days old (needs 1) — nothing to do: this check re-runs by itself". Eligible from 2026-11-27 21:30 local. |
 
 ## The one blocking rule: repository age
 
